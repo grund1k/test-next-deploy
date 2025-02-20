@@ -4,42 +4,44 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME || 'htmlonelove' }}   # User for GHCR
-  DOCKER_REPO: ${{ vars.DOCKER_REPO || 'liga-nextjs-template' }}  # Repo name
-  DOCKER_IMAGE: ghcr.io/${{ vars.DOCKER_USERNAME || 'htmlonelove' }}/${{ vars.DOCKER_REPO || 'liga-nextjs-template' }}:latest  # Full image name
+  DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME || 'htmlonelove' }}
+  DOCKER_REPO: ${{ vars.DOCKER_REPO || 'liga-nextjs-template' }}
+  DOCKER_IMAGE: ghcr.io/${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_REPO }}:latest
+  VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+  VPS_IP: ${{ secrets.VPS_IP }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: SSH config to VPS
+      - name: Add VPS to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ env.VPS_IP }} $(ssh-keyscan -H ${{ env.VPS_IP }} 2>/dev/null)" >> ~/.ssh/known_hosts
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Step 3: Deploy to VPS
       - name: Deploy to VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << EOF
+          ssh ${{ env.VPS_USERNAME }}@${{ env.VPS_IP }} << EOF
+            set -e
             export DOCKER_IMAGE="${{ env.DOCKER_IMAGE }}"
             echo "Pulling image: \$DOCKER_IMAGE"
-            docker pull \$DOCKER_IMAGE
-            docker stop nextjs-app || true
-            docker rm nextjs-app || true
-            docker run -d --name nextjs-app -p 3000:3000 \$DOCKER_IMAGE
+            docker-compose pull || { echo "Failed to pull image"; exit 1; }
+            docker-compose up -d || { echo "Failed to start container"; exit 1; }
           EOF
 
-      # Step 4: Configure Nginx
       - name: Configure Nginx
         run: |
-          scp -o StrictHostKeyChecking=no ./nginx.conf ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:/tmp/nginx.conf
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << EOF
+          rsync -avz -e "ssh" ./nginx.conf ${{ env.VPS_USERNAME }}@${{ env.VPS_IP }}:/tmp/nginx.conf
+          ssh ${{ env.VPS_USERNAME }}@${{ env.VPS_IP }} << EOF
             sudo mv /tmp/nginx.conf /etc/nginx/sites-available/nextjs-app
             sudo ln -sf /etc/nginx/sites-available/nextjs-app /etc/nginx/sites-enabled/
             sudo rm -f /etc/nginx/sites-enabled/default
