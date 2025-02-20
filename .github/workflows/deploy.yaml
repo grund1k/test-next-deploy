@@ -28,6 +28,7 @@ jobs:
 
       - name: Deploy to VPS
         run: |
+          scp docker-compose.yml ${{ env.VPS_USERNAME }}@${{ env.VPS_IP }}:~/docker-compose.yml
           ssh ${{ env.VPS_USERNAME }}@${{ env.VPS_IP }} << EOF
             set -e
             export DOCKER_IMAGE="${{ env.DOCKER_IMAGE }}"
