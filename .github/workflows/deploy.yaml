@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_IMAGE: ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest
+  DOCKER_IMAGE: ghcr.io/${{ vars.DOCKER_USERNAME }}/${{ vars.DOCKER_REPO }}:latest
   VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
   VPS_IP: ${{ secrets.VPS_IP }}
 
