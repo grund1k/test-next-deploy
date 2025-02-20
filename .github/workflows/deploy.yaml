@@ -23,6 +23,7 @@ jobs:
       - name: Deploy to VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          export DOCKER_IMAGE=$DOCKER_IMAGE
           docker pull $DOCKER_IMAGE
           docker stop nextjs-app || true
           docker rm nextjs-app || true
