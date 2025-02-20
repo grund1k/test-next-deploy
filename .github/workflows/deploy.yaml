@@ -33,8 +33,8 @@ jobs:
             set -e
             export DOCKER_IMAGE="${{ env.DOCKER_IMAGE }}"
             echo "Pulling image: \$DOCKER_IMAGE"
-            docker-compose pull || { echo "Failed to pull image"; exit 1; }
-            docker-compose up -d || { echo "Failed to start container"; exit 1; }
+            docker compose pull || { echo "Failed to pull image"; exit 1; }
+            docker compose up -d || { echo "Failed to start container"; exit 1; }
           EOF
 
       - name: Configure Nginx
