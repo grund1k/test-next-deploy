@@ -4,9 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME || 'htmlonelove' }}
-  DOCKER_REPO: ${{ vars.DOCKER_REPO || 'liga-nextjs-template' }}
-  DOCKER_IMAGE: ghcr.io/${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_REPO }}:latest
+  DOCKER_IMAGE: ghcr.io/${{ secrets.DOCKER_USERNAME || 'htmlonelove' }}/${{ secrets.DOCKER_REPO || 'liga-nextjs-template' }}:latest
   VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
   VPS_IP: ${{ secrets.VPS_IP }}
 
