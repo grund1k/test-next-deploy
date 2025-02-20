@@ -1,0 +1,41 @@
+name: Deploy to VPS
+
+on:
+  workflow_dispatch:
+
+env:
+  DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME || 'htmlonelove' }}   # user name for GHCR
+  DOCKER_REPO: ${{ vars.DOCKER_REPO || 'liga-nextjs-template' }}  # rep name
+  DOCKER_IMAGE: ghcr.io/$DOCKER_USERNAME/$DOCKER_REPO:latest      # full image name
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: SSH config to VPS
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Step 2: Deploy to VPS
+      - name: Deploy to VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          docker pull $DOCKER_IMAGE
+          docker stop nextjs-app || true
+          docker rm nextjs-app || true
+          docker run -d --name nextjs-app -p 3000:3000 $DOCKER_IMAGE
+          EOF
+
+      # Step 3: Configure Nginx
+      - name: Configure Nginx
+        run: |
+          scp -o StrictHostKeyChecking=no ./nginx.conf ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:/tmp/nginx.conf
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          sudo mv /tmp/nginx.conf /etc/nginx/sites-available/nextjs-app
+          sudo ln -sf /etc/nginx/sites-available/nextjs-app /etc/nginx/sites-enabled/
+          sudo rm -f /etc/nginx/sites-enabled/default
+          sudo systemctl restart nginx
+          EOF
