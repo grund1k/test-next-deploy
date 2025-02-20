@@ -16,6 +16,10 @@ jobs:
       # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
+      
+      - name: Check nginx.conf exists
+        run: |
+          ls -la ./nginx.conf
 
       # Step 2: SSH config to VPS
       - name: Set up SSH
